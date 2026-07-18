@@ -12,15 +12,16 @@ use freya::{
     },
     prelude::{
         Alignment, Border, BorderAlignment, BorderWidth, Component, Direction, Element, Event,
-        FileEventData, IntoElement, Platform, Size, WritableUtils, WinitPlatformExt, use_consume,
-        use_state,
+        FileEventData, IntoElement, Platform, Size, WritableUtils, use_consume, use_state,
     },
-    winit::dpi::LogicalSize,
 };
 
 use crate::{
     audio::AudioPlayer,
-    ui::components::scrolling_text::{HEIGHT as TRACK_ROW_HEIGHT, ScrollingText},
+    ui::{
+        components::scrolling_text::{HEIGHT as TRACK_ROW_HEIGHT, ScrollingText},
+        window_fit::resize_window_height,
+    },
 };
 
 const DROP_ZONE_COLOR: (u8, u8, u8) = (20, 20, 20);
@@ -113,15 +114,8 @@ impl Component for MusicList {
                                 tracks.set(track_labels(&drop_player));
 
                                 // Powiększ okno o wysokość jednej linii listy
-                                let platform = Platform::get();
-                                let size = *platform.root_size.peek();
-                                let new_height = size.height + TRACK_ROW_HEIGHT;
-                                platform.with_window(None, move |window| {
-                                    let _ = window.request_inner_size(LogicalSize::new(
-                                        size.width as f64,
-                                        new_height as f64,
-                                    ));
-                                });
+                                let size = *Platform::get().root_size.peek();
+                                resize_window_height((size.height + TRACK_ROW_HEIGHT) as f64);
                             }
                         }
                     })
