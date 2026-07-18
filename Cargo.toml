@@ -1,0 +1,12 @@
+[package]
+name = "music-listener"
+version = "0.1.0"
+edition = "2024"
+include = [
+    "assets/**/*"
+]
+
+[dependencies]
+freya = { version = "0.4.0-rc.24", features = ["router", "icons"] }
+rodio = "0.21"
+async-io = "2"
