@@ -43,7 +43,7 @@ impl Component for MusicInfo {
         let length_text = format!("({}:{:02})", total_secs() / 60, total_secs() % 60);
 
         let mut music_timer_current = use_state(|| 0u16);
-        let mut currently_playing = use_state(|| true);
+        let mut currently_playing = use_state(|| false);
 
         let volume = use_state(|| 1.0f32);
         let mut music_progress = use_state(|| 0.0f32);

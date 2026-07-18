@@ -83,12 +83,14 @@ impl AudioPlayer {
             tracks: RefCell::new(tracks),
             current: Cell::new(0),
         };
-        player.load(0);
+        // Ładuj pierwszy utwór, ale nie odtwarzaj - dopiero po kliknięciu Play
+        player.load(0, false);
         player
     }
 
-    /// Zatrzymuje bieżący utwór i odtwarza ten o podanym indeksie playlisty.
-    fn load(&self, index: usize) {
+    /// Zatrzymuje bieżący utwór i ładuje ten o podanym indeksie playlisty.
+    /// Gdy `play` jest true, od razu zaczyna odtwarzanie.
+    fn load(&self, index: usize, play: bool) {
         let path = self.tracks.borrow()[index].path.clone();
 
         let file = File::open(&path).expect("Nie można otworzyć pliku audio");
@@ -104,10 +106,14 @@ impl AudioPlayer {
 
         self.current.set(index);
 
-        // clear() usuwa zakolejkowane źródła i pauzuje sink, stąd play() na końcu
+        // clear() usuwa zakolejkowane źródła i pauzuje sink
         self.sink.clear();
         self.sink.append(source);
-        self.sink.play();
+        if play {
+            self.sink.play();
+        } else {
+            self.sink.pause();
+        }
     }
 
     /// Kopiuje plik .mp3 do `assets/music` (jeśli jeszcze go tam nie ma)
@@ -173,7 +179,7 @@ impl AudioPlayer {
 
     /// Następny utwór (zapętla się na koniec playlisty).
     pub fn next(&self) {
-        self.load((self.current.get() + 1) % self.tracks.borrow().len());
+        self.load((self.current.get() + 1) % self.tracks.borrow().len(), true);
     }
 
     /// Poprzedni utwór (zapętla się na początek playlisty).
@@ -183,14 +189,14 @@ impl AudioPlayer {
             .get()
             .checked_sub(1)
             .unwrap_or(self.tracks.borrow().len() - 1);
-        self.load(index);
+        self.load(index, true);
     }
 
     /// Odtwarza bieżący utwór od początku.
     pub fn restart(&self) {
         if self.sink.empty() {
             // Utwór dograł do końca - trzeba go załadować ponownie
-            self.load(self.current.get());
+            self.load(self.current.get(), true);
         } else {
             self.seek(Duration::ZERO);
             self.sink.play();
@@ -199,7 +205,7 @@ impl AudioPlayer {
 
     pub fn play(&self) {
         if self.sink.empty() {
-            self.load(self.current.get());
+            self.load(self.current.get(), true);
         } else {
             self.sink.play();
         }
