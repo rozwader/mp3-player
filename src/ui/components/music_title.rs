@@ -1,6 +1,6 @@
 use freya::{elements::{extensions::{ChildrenExt, ContainerSizeExt, StyleExt}, rect::rect}, prelude::{Border, BorderAlignment, BorderWidth, Component, IntoElement, Size}};
 
-use crate::ui::components::scrolling_text::ScrollingText;
+use crate::ui::components::{music_list::Track, scrolling_text::ScrollingText};
 
 #[derive(PartialEq)]
 pub struct MusicTitle {
@@ -31,7 +31,10 @@ impl Component for MusicTitle {
                 width: BorderWidth {top: 0., bottom: 2., left: 0., right: 2.},
             })
             .child(
-                ScrollingText::new(full_text)
+                ScrollingText::new(Track {
+                    display_title: full_text,
+                    title: self.title.clone(),
+                }, None)
             )
     }
 }

@@ -27,14 +27,23 @@ use crate::{
 const DROP_ZONE_COLOR: (u8, u8, u8) = (20, 20, 20);
 const DROP_ZONE_HOVER_COLOR: (u8, u8, u8) = (0, 60, 0);
 
-fn track_labels(player: &AudioPlayer) -> Vec<String> {
+#[derive(PartialEq)]
+pub struct Track {
+    pub title: String,
+    pub display_title: String,
+}
+
+fn get_tracks(player: &AudioPlayer) -> Vec<Track> {
     player
         .tracks()
         .iter()
         .enumerate()
         .map(|(index, track)| {
             let secs = track.duration.as_secs();
-            format!("{}: {} ({}:{:02})", index + 1, track.title, secs / 60, secs % 60)
+            Track {
+                title: track.title.clone(),
+                display_title: format!("{}: {} ({}:{:02})", index + 1, track.title, secs / 60, secs % 60)
+            }
         })
         .collect()
 }
@@ -48,21 +57,24 @@ impl Component for MusicList {
 
         let mut tracks = use_state({
             let player = player.clone();
-            move || track_labels(&player)
+            move || get_tracks(&player)
         });
         let mut file_hovering = use_state(|| false);
 
         let drop_player = player.clone();
-
+        
         let items: Vec<Element> = tracks
             .read()
             .iter()
             .enumerate()
-            .map(|(index, track_label)| {
+            .map(|(index, track)| {
                 rect()
                     .key(index)
                     .width(Size::Fill)
-                    .child(ScrollingText::new(track_label.clone()))
+                    .child(ScrollingText::new(Track {
+                        display_title: track.display_title.clone(),
+                        title: track.title.clone(),
+                    }, Some(player.clone())))
                     .into_element()
             })
             .collect();
@@ -111,7 +123,7 @@ impl Component for MusicList {
                         file_hovering.set(false);
                         if let Some(path) = event.file_path.clone() {
                             if drop_player.add_track(path) {
-                                tracks.set(track_labels(&drop_player));
+                                tracks.set(get_tracks(&drop_player));
 
                                 // Powiększ okno o wysokość jednej linii listy
                                 let size = *Platform::get().root_size.peek();

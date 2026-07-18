@@ -56,6 +56,13 @@ pub struct AudioPlayer {
     current: Cell<usize>,
 }
 
+impl PartialEq for AudioPlayer {
+    fn eq(&self, other: &Self) -> bool {
+        self.music_dir == other.music_dir
+        && self.current == other.current
+    }
+}
+
 impl AudioPlayer {
     /// Wczytuje wszystkie pliki .mp3 z katalogu (posortowane po nazwie)
     /// i od razu zaczyna odtwarzać pierwszy z nich.
@@ -175,6 +182,11 @@ impl AudioPlayer {
     /// Kopia playlisty do wyświetlenia w UI.
     pub fn tracks(&self) -> Vec<Track> {
         self.tracks.borrow().clone()
+    }
+
+    pub fn load_on_demand(&self, title: String) {
+        let index = self.tracks.borrow().iter().enumerate().find(|(_, track)| track.title == title).unwrap().0;
+        self.load(index, true)
     }
 
     /// Następny utwór (zapętla się na koniec playlisty).
