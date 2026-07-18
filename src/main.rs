@@ -1,4 +1,4 @@
-use freya::prelude::{Bytes, LaunchConfig, WindowConfig, launch};
+use freya::{prelude::{Bytes, LaunchConfig, WindowConfig, launch}, winit::window::Icon};
 
 use crate::{
     app::app,
@@ -31,7 +31,8 @@ fn main() {
                     .with_size(WINDOW_WIDTH, height)
                     .with_max_size(WINDOW_WIDTH, WINDOW_MAX_HEIGHT)
                     .with_min_size(WINDOW_WIDTH, WINDOW_MIN_HEIGHT)
-                    .with_title("MP3 Player"),
+                    .with_title("MP3 Player")
+                    .with_icon(LaunchConfig::window_icon(include_bytes!("../assets/app_icon.png"))),
             ),
     );
 }

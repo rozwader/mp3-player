@@ -91,11 +91,6 @@ impl Slider {
         self
     }
 
-    pub fn border_color(mut self, color: Rgb) -> Self {
-        self.border_color = color;
-        self
-    }
-
     fn thumb_stripe(color: Rgb) -> Element {
         rect()
             .width(Size::px(2.))
