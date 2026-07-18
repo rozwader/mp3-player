@@ -45,7 +45,7 @@ impl Component for MusicInfo {
         let mut music_timer_current = use_state(|| 0u16);
         let mut currently_playing = use_state(|| false);
 
-        let volume = use_state(|| 1.0f32);
+        let volume = use_state(|| 0.5f32);
         let mut music_progress = use_state(|| 0.0f32);
 
         use_hook({
