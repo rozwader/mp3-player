@@ -46,7 +46,7 @@ impl Component for ScrollingText {
         });
 
         let offset = animation.get().value();
-        let duplicated = format!("  {}   {}", self.track.display_title, self.track.display_title);
+        let duplicated = format!("  {}   {}", self.track.display_title, self.track.title);
         let player = self.player.clone();
         let title = self.track.title.clone();
 

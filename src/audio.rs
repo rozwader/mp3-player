@@ -7,6 +7,8 @@ use std::{
 
 use rodio::{Decoder, OutputStream, OutputStreamBuilder, Sink, Source};
 
+use crate::spectrum::{BAND_COUNT, SampleTap, TappedSource};
+
 #[derive(Clone)]
 pub struct Track {
     pub path: PathBuf,
@@ -54,6 +56,8 @@ pub struct AudioPlayer {
     music_dir: PathBuf,
     tracks: RefCell<Vec<Track>>,
     current: Cell<usize>,
+    /// Live mono samples from the currently playing source (for the spectrum).
+    tap: SampleTap,
 }
 
 impl PartialEq for AudioPlayer {
@@ -89,6 +93,7 @@ impl AudioPlayer {
             music_dir,
             tracks: RefCell::new(tracks),
             current: Cell::new(0),
+            tap: SampleTap::new(),
         };
         // Ładuj pierwszy utwór, ale nie odtwarzaj - dopiero po kliknięciu Play
         player.load(0, false);
@@ -112,10 +117,12 @@ impl AudioPlayer {
             .expect("Nie można zdekodować pliku audio");
 
         self.current.set(index);
+        self.tap.clear();
 
         // clear() usuwa zakolejkowane źródła i pauzuje sink
         self.sink.clear();
-        self.sink.append(source);
+        // Tap samples as they play so the spectrum stays in sync with audio.
+        self.sink.append(TappedSource::new(source, self.tap.clone()));
         if play {
             self.sink.play();
         } else {
@@ -254,5 +261,14 @@ impl AudioPlayer {
 
     pub fn duration(&self) -> Duration {
         self.tracks.borrow()[self.current.get()].duration
+    }
+
+    /// 32 amplitude bands (0..=1) for the spectrum analyzer UI.
+    pub fn spectrum_bands(&self) -> [f32; BAND_COUNT] {
+        if self.is_playing() {
+            self.tap.bands()
+        } else {
+            self.tap.decay()
+        }
     }
 }

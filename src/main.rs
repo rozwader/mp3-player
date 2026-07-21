@@ -9,6 +9,7 @@ use crate::{
 
 mod app;
 mod audio;
+mod spectrum;
 mod ui;
 
 fn main() {

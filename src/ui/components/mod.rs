@@ -4,3 +4,4 @@ pub mod scrolling_text;
 pub mod music_timer;
 pub mod slider;
 pub mod music_list;
+pub mod spectrum_analyzer;

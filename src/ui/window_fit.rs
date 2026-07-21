@@ -6,6 +6,7 @@ use freya::{
 pub const WINDOW_WIDTH: f64 = 600.;
 pub const WINDOW_MIN_HEIGHT: f64 = 250.;
 pub const WINDOW_MAX_HEIGHT: f64 = 800.;
+pub const SPECTRUM_HEIGHT: f32 = 80.;
 
 const APP_PADDING: f32 = 12. * 2.;
 const APP_SPACING: f32 = 12.;
@@ -54,7 +55,12 @@ pub fn height_for_tracks(track_count: usize) -> f64 {
         + list_tracks_height(track_count)
         + DROP_ZONE_HEIGHT
         + LIST_BORDER;
-    let total = APP_PADDING + MUSIC_INFO_HEIGHT + APP_SPACING + music_list;
+    let total = APP_PADDING
+        + MUSIC_INFO_HEIGHT
+        + APP_SPACING
+        + SPECTRUM_HEIGHT
+        + APP_SPACING
+        + music_list;
     (total as f64).clamp(WINDOW_MIN_HEIGHT, WINDOW_MAX_HEIGHT)
 }
 

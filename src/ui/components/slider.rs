@@ -5,8 +5,11 @@ use freya::{
             EventHandlersExt, LayerExt, StyleExt,
         },
         rect::rect,
-    }, prelude::{
-        Alignment, Border, BorderAlignment, BorderWidth, Component, Direction, Element, Event, EventHandler, IntoElement, PointerEventData, Position, Size, SizedEventData, State, WritableUtils, use_state,
+    },
+    prelude::{
+        Alignment, Border, BorderAlignment, BorderWidth, Component, Direction, Element, Event,
+        EventHandler, IntoElement, PointerEventData, Position, Size, SizedEventData, State,
+        WritableUtils, use_state,
     },
 };
 
@@ -21,12 +24,11 @@ const DEFAULT_THUMB_COLOR: Rgb = (188, 188, 188);
 const DEFAULT_THUMB_STRIPE_COLOR: Rgb = (70, 70, 70);
 const DEFAULT_BORDER_COLOR: Rgb = (148, 148, 148);
 
-/// Slider sterowany z zewnątrz. Wartość (0.0..=1.0) trzyma rodzic w `use_state`
-/// i przekazuje tutaj `State<f32>` - każda zmiana stanu odświeża suwak.
-/// Można też przeciągać go myszką - nowa wartość trafia do tego samego stanu.
+/// Slider sterowany z zewnątrz. Wartość (0.0..=1.0) trzyma rodzic w `use_state`.
 ///
-/// Kolory konfiguruje się builderem:
-/// `Slider::new(value, Size::Fill).fill_color((60, 60, 90)).thumb_color((224, 176, 66))`
+/// - `on_change` — przy każdym ruchu (np. głośność na żywo)
+/// - `on_drag_start` — przy rozpoczęciu przeciągania
+/// - `on_change_end` — dopiero po puszczeniu (np. seek utworu)
 pub struct Slider {
     value: State<f32>,
     width: Size,
@@ -36,6 +38,8 @@ pub struct Slider {
     thumb_stripe_color: Rgb,
     border_color: Rgb,
     on_change: Option<EventHandler<f32>>,
+    on_drag_start: Option<EventHandler<()>>,
+    on_change_end: Option<EventHandler<f32>>,
 }
 
 impl PartialEq for Slider {
@@ -61,13 +65,26 @@ impl Slider {
             thumb_stripe_color: DEFAULT_THUMB_STRIPE_COLOR,
             border_color: DEFAULT_BORDER_COLOR,
             on_change: None,
+            on_drag_start: None,
+            on_change_end: None,
         }
     }
 
-    /// Wywoływany tylko gdy wartość zmienia użytkownik (klik/przeciąganie),
-    /// nie gdy stan zmienia się z zewnątrz.
+    /// Wywoływany przy każdej zmianie wartości przez użytkownika (klik/przeciąganie).
     pub fn on_change(mut self, handler: impl FnMut(f32) + 'static) -> Self {
         self.on_change = Some(EventHandler::new(handler));
+        self
+    }
+
+    /// Wywoływany raz, gdy użytkownik zaczyna przeciągać suwak.
+    pub fn on_drag_start(mut self, handler: impl FnMut(()) + 'static) -> Self {
+        self.on_drag_start = Some(EventHandler::new(handler));
+        self
+    }
+
+    /// Wywoływany raz, gdy użytkownik puści suwak — z finalną wartością.
+    pub fn on_change_end(mut self, handler: impl FnMut(f32) + 'static) -> Self {
+        self.on_change_end = Some(EventHandler::new(handler));
         self
     }
 
@@ -91,6 +108,11 @@ impl Slider {
         self
     }
 
+    pub fn border_color(mut self, color: Rgb) -> Self {
+        self.border_color = color;
+        self
+    }
+
     fn thumb_stripe(color: Rgb) -> Element {
         rect()
             .width(Size::px(2.))
@@ -105,14 +127,16 @@ impl Component for Slider {
         let mut value = self.value;
         let on_change_down = self.on_change.clone();
         let on_change_move = self.on_change.clone();
+        let on_drag_start = self.on_drag_start.clone();
+        let on_change_end = self.on_change_end.clone();
 
         let mut is_dragging = use_state(|| false);
         let mut track_origin_x = use_state(|| 0.0f32);
         let mut track_width = use_state(|| 0.0f32);
 
         let progress = self.value.read().clamp(0., 1.);
-        let thumb_x =
-            (track_width() * progress - THUMB_WIDTH / 2.).clamp(0., (track_width() - THUMB_WIDTH).max(0.));
+        let thumb_x = (track_width() * progress - THUMB_WIDTH / 2.)
+            .clamp(0., (track_width() - THUMB_WIDTH).max(0.));
 
         rect()
             .width(self.width.clone())
@@ -125,6 +149,10 @@ impl Component for Slider {
             .on_pointer_down(move |event: Event<PointerEventData>| {
                 if event.is_primary() && track_width() > 0. {
                     is_dragging.set(true);
+                    if let Some(on_drag_start) = &on_drag_start {
+                        on_drag_start.call(());
+                    }
+
                     let x = event.element_location().x as f32;
                     let new_value = (x / track_width()).clamp(0., 1.);
                     value.set(new_value);
@@ -146,6 +174,9 @@ impl Component for Slider {
             .on_global_pointer_press(move |_| {
                 if is_dragging() {
                     is_dragging.set(false);
+                    if let Some(on_change_end) = &on_change_end {
+                        on_change_end.call(value().clamp(0., 1.));
+                    }
                 }
             })
             .child(
@@ -172,7 +203,12 @@ impl Component for Slider {
             .border(Border {
                 fill: self.border_color.into(),
                 alignment: BorderAlignment::Outer,
-                width: BorderWidth {top: 0., bottom: 2., left: 0., right: 2.},
+                width: BorderWidth {
+                    top: 0.,
+                    bottom: 2.,
+                    left: 0.,
+                    right: 2.,
+                },
             })
     }
 }

@@ -1,34 +1,51 @@
-use std::rc::Rc;
+use std::{rc::Rc, time::Duration};
 
 use freya::{
     components::SvgViewer,
     elements::{
         extensions::{
             ChildrenExt, ContainerExt, ContainerSizeExt, ContainerWithContentExt, EventHandlersExt,
-            PressEventData, StyleExt, TextStyleExt,
+            StyleExt,
         },
         rect::rect,
     },
     icons::lucide::{arrow_left_to_line, arrow_right_to_line, pause, play, rotate_ccw},
     prelude::{
-        Element, Event, EventHandler, IntoElement, Size, SizedEventData, WritableUtils,
-        use_provide_context, use_state,
+        Element, Event, EventHandler, IntoElement, Size, SizedEventData, WritableUtils, spawn,
+        use_hook, use_provide_context, use_state,
     },
 };
 
 use crate::{
     audio::AudioPlayer,
+    spectrum::BAND_COUNT,
     ui::{
-        components::{button::Button, music_list::MusicList},
+        components::{button::Button, music_list::MusicList, spectrum_analyzer::SpectrumAnalyzer},
         music_controls::MusicControls,
         music_info::MusicInfo,
-        window_fit::{WINDOW_MAX_HEIGHT, WINDOW_MIN_HEIGHT, resize_window_height},
+        window_fit::{
+            SPECTRUM_HEIGHT, WINDOW_MAX_HEIGHT, WINDOW_MIN_HEIGHT, resize_window_height,
+        },
     },
 };
 
 pub fn app() -> Element {
     let player = use_provide_context(|| Rc::new(AudioPlayer::from_dir("assets/music")));
     let mut fitted = use_state(|| false);
+    let mut spectrum = use_state(|| [0f32; BAND_COUNT]);
+
+    use_hook({
+        let player = player.clone();
+        move || {
+            spawn(async move {
+                loop {
+                    // ~30 FPS spectrum refresh
+                    async_io::Timer::after(Duration::from_millis(33)).await;
+                    spectrum.set(player.spectrum_bands());
+                }
+            });
+        }
+    });
 
     let previous_player = player.clone();
     let play_player = player.clone();
@@ -47,7 +64,6 @@ pub fn app() -> Element {
                 .padding(12.)
                 .spacing(12.)
                 .on_sized(move |event: Event<SizedEventData>| {
-                    // Po pierwszym layoutcie dopasuj okno do rzeczywistej wysokości treści
                     if !fitted() {
                         fitted.set(true);
                         let height = (event.area.height() as f64)
@@ -125,6 +141,7 @@ pub fn app() -> Element {
                     ])
                     .into_element(),
                 ))
+                .child(SpectrumAnalyzer::new(spectrum()).max_height(SPECTRUM_HEIGHT))
                 .child(MusicList {}),
         )
         .into_element()
