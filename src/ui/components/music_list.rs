@@ -20,12 +20,10 @@ use crate::{
     audio::AudioPlayer,
     ui::{
         components::scrolling_text::{HEIGHT as TRACK_ROW_HEIGHT, ScrollingText},
+        theme::use_theme,
         window_fit::resize_window_height,
     },
 };
-
-const DROP_ZONE_COLOR: (u8, u8, u8) = (20, 20, 20);
-const DROP_ZONE_HOVER_COLOR: (u8, u8, u8) = (0, 60, 0);
 
 #[derive(PartialEq)]
 pub struct Track {
@@ -54,6 +52,7 @@ pub struct MusicList {}
 impl Component for MusicList {
     fn render(&self) -> impl IntoElement {
         let player = use_consume::<Rc<AudioPlayer>>();
+        let theme = use_theme()();
 
         let mut tracks = use_state({
             let player = player.clone();
@@ -81,10 +80,10 @@ impl Component for MusicList {
 
         rect()
             .width(Size::Fill)
-            .background((0, 0, 0))
-            .color((0, 255, 0))
+            .background(theme.bg)
+            .color(theme.text)
             .border(Border {
-                fill: (148, 148, 148).into(),
+                fill: theme.border.into(),
                 alignment: BorderAlignment::Outer,
                 width: BorderWidth { top: 0., bottom: 2., left: 0., right: 2. },
             })
@@ -104,12 +103,12 @@ impl Component for MusicList {
                     .main_align(Alignment::Center)
                     .cross_align(Alignment::Center)
                     .background(if file_hovering() {
-                        DROP_ZONE_HOVER_COLOR
+                        theme.drop_zone_hov_bg
                     } else {
-                        DROP_ZONE_COLOR
+                        theme.drop_zone_bg
                     })
                     .border(Border {
-                        fill: (148, 148, 148).into(),
+                        fill: theme.border.into(),
                         alignment: BorderAlignment::Outer,
                         width: BorderWidth { top: 0., bottom: 2., left: 0., right: 2. },
                     })

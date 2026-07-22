@@ -13,18 +13,17 @@ use freya::{
     },
 };
 
+use crate::ui::theme::{ColorType, use_theme};
+
 const TRACK_HEIGHT: f32 = 14.;
 const THUMB_WIDTH: f32 = 16.;
 
-pub type Rgb = (u8, u8, u8);
-
-const DEFAULT_FILL_COLOR: Rgb = (196, 124, 60);
-const DEFAULT_TRACK_COLOR: Rgb = (52, 84, 160);
-const DEFAULT_THUMB_COLOR: Rgb = (188, 188, 188);
-const DEFAULT_THUMB_STRIPE_COLOR: Rgb = (70, 70, 70);
-const DEFAULT_BORDER_COLOR: Rgb = (148, 148, 148);
+pub type Rgb = ColorType;
 
 /// Slider sterowany z zewnątrz. Wartość (0.0..=1.0) trzyma rodzic w `use_state`.
+///
+/// Kolory thumb/stripe/border biorą się z theme; fill/track można nadpisać builderem
+/// (domyślnie: `volume_bg` / `volume_hov_bg`).
 ///
 /// - `on_change` — przy każdym ruchu (np. głośność na żywo)
 /// - `on_drag_start` — przy rozpoczęciu przeciągania
@@ -32,11 +31,8 @@ const DEFAULT_BORDER_COLOR: Rgb = (148, 148, 148);
 pub struct Slider {
     value: State<f32>,
     width: Size,
-    fill_color: Rgb,
-    track_color: Rgb,
-    thumb_color: Rgb,
-    thumb_stripe_color: Rgb,
-    border_color: Rgb,
+    fill_color: Option<Rgb>,
+    track_color: Option<Rgb>,
     on_change: Option<EventHandler<f32>>,
     on_drag_start: Option<EventHandler<()>>,
     on_change_end: Option<EventHandler<f32>>,
@@ -48,9 +44,6 @@ impl PartialEq for Slider {
             && self.width == other.width
             && self.fill_color == other.fill_color
             && self.track_color == other.track_color
-            && self.thumb_color == other.thumb_color
-            && self.thumb_stripe_color == other.thumb_stripe_color
-            && self.border_color == other.border_color
     }
 }
 
@@ -59,11 +52,8 @@ impl Slider {
         Self {
             value,
             width,
-            fill_color: DEFAULT_FILL_COLOR,
-            track_color: DEFAULT_TRACK_COLOR,
-            thumb_color: DEFAULT_THUMB_COLOR,
-            thumb_stripe_color: DEFAULT_THUMB_STRIPE_COLOR,
-            border_color: DEFAULT_BORDER_COLOR,
+            fill_color: None,
+            track_color: None,
             on_change: None,
             on_drag_start: None,
             on_change_end: None,
@@ -89,27 +79,12 @@ impl Slider {
     }
 
     pub fn fill_color(mut self, color: Rgb) -> Self {
-        self.fill_color = color;
+        self.fill_color = Some(color);
         self
     }
 
     pub fn track_color(mut self, color: Rgb) -> Self {
-        self.track_color = color;
-        self
-    }
-
-    pub fn thumb_color(mut self, color: Rgb) -> Self {
-        self.thumb_color = color;
-        self
-    }
-
-    pub fn thumb_stripe_color(mut self, color: Rgb) -> Self {
-        self.thumb_stripe_color = color;
-        self
-    }
-
-    pub fn border_color(mut self, color: Rgb) -> Self {
-        self.border_color = color;
+        self.track_color = Some(color);
         self
     }
 
@@ -124,6 +99,13 @@ impl Slider {
 
 impl Component for Slider {
     fn render(&self) -> impl IntoElement {
+        let theme = use_theme()();
+        let fill_color = self.fill_color.unwrap_or(theme.volume_bg);
+        let track_color = self.track_color.unwrap_or(theme.volume_hov_bg);
+        let thumb_color = theme.thumb;
+        let thumb_stripe_color = theme.thumb_stripe;
+        let border_color = theme.border;
+
         let mut value = self.value;
         let on_change_down = self.on_change.clone();
         let on_change_move = self.on_change.clone();
@@ -141,7 +123,7 @@ impl Component for Slider {
         rect()
             .width(self.width.clone())
             .height(Size::px(TRACK_HEIGHT))
-            .background(self.track_color)
+            .background(track_color)
             .on_sized(move |event: Event<SizedEventData>| {
                 track_origin_x.set(event.area.min_x());
                 track_width.set(event.area.width());
@@ -183,7 +165,7 @@ impl Component for Slider {
                 rect()
                     .width(Size::percent(progress * 100.))
                     .height(Size::Fill)
-                    .background(self.fill_color),
+                    .background(fill_color),
             )
             .child(
                 rect()
@@ -191,17 +173,17 @@ impl Component for Slider {
                     .layer(1i16)
                     .width(Size::px(THUMB_WIDTH))
                     .height(Size::px(TRACK_HEIGHT))
-                    .background(self.thumb_color)
+                    .background(thumb_color)
                     .direction(Direction::Horizontal)
                     .main_align(Alignment::Center)
                     .cross_align(Alignment::Center)
                     .spacing(2.)
-                    .child(Self::thumb_stripe(self.thumb_stripe_color))
-                    .child(Self::thumb_stripe(self.thumb_stripe_color))
-                    .child(Self::thumb_stripe(self.thumb_stripe_color)),
+                    .child(Self::thumb_stripe(thumb_stripe_color))
+                    .child(Self::thumb_stripe(thumb_stripe_color))
+                    .child(Self::thumb_stripe(thumb_stripe_color)),
             )
             .border(Border {
-                fill: self.border_color.into(),
+                fill: border_color.into(),
                 alignment: BorderAlignment::Outer,
                 width: BorderWidth {
                     top: 0.,

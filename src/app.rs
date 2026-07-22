@@ -17,22 +17,20 @@ use freya::{
 };
 
 use crate::{
-    audio::AudioPlayer,
-    spectrum::BAND_COUNT,
-    ui::{
-        components::{button::Button, music_list::MusicList, spectrum_analyzer::SpectrumAnalyzer},
-        music_controls::MusicControls,
-        music_info::MusicInfo,
-        window_fit::{
+    audio::AudioPlayer, spectrum::BAND_COUNT, ui::{
+        components::{button::Button, music_list::MusicList, spectrum_analyzer::SpectrumAnalyzer}, music_controls::MusicControls, music_info::MusicInfo, theme::{DEFAULT_APP_THEME, LIGHT_APP_THEME, use_init_theme}, window_fit::{
             SPECTRUM_HEIGHT, WINDOW_MAX_HEIGHT, WINDOW_MIN_HEIGHT, resize_window_height,
         },
     },
 };
 
 pub fn app() -> Element {
+    let theme = use_init_theme(|| LIGHT_APP_THEME);
     let player = use_provide_context(|| Rc::new(AudioPlayer::from_dir("assets/music")));
     let mut fitted = use_state(|| false);
     let mut spectrum = use_state(|| [0f32; BAND_COUNT]);
+
+    let theme_colors = theme();
 
     use_hook({
         let player = player.clone();
@@ -56,7 +54,7 @@ pub fn app() -> Element {
     rect()
         .width(Size::Fill)
         .height(Size::Fill)
-        .background((44, 50, 84))
+        .background(theme_colors.secondary_bg)
         .child(
             rect()
                 .width(Size::Fill)
@@ -77,65 +75,55 @@ pub fn app() -> Element {
                             EventHandler::new(move |_| {
                                 previous_player.previous();
                             }),
-                            Some(Box::new(|| -> Element {
+                            Some(Box::new(|color| {
                                 SvgViewer::new(("arrow-left-to-line", arrow_left_to_line()))
-                                    .color((200, 200, 200))
+                                    .color(color)
                                     .into_element()
                             })),
-                            (150, 150, 150),
-                            (120, 120, 120),
                         )
                         .into_element(),
                         Button::icon(
                             EventHandler::new(move |_| {
                                 play_player.play();
                             }),
-                            Some(Box::new(|| -> Element {
+                            Some(Box::new(|color| {
                                 SvgViewer::new(("play", play()))
-                                    .color((200, 200, 200))
+                                    .color(color)
                                     .into_element()
                             })),
-                            (150, 150, 150),
-                            (120, 120, 120),
                         )
                         .into_element(),
                         Button::icon(
                             EventHandler::new(move |_| {
                                 pause_player.pause();
                             }),
-                            Some(Box::new(|| -> Element {
+                            Some(Box::new(|color| {
                                 SvgViewer::new(("pause", pause()))
-                                    .color((200, 200, 200))
+                                    .color(color)
                                     .into_element()
                             })),
-                            (150, 150, 150),
-                            (120, 120, 120),
                         )
                         .into_element(),
                         Button::icon(
                             EventHandler::new(move |_| {
                                 restart_player.restart();
                             }),
-                            Some(Box::new(|| -> Element {
+                            Some(Box::new(|color| {
                                 SvgViewer::new(("rotate_ccw", rotate_ccw()))
-                                    .color((200, 200, 200))
+                                    .color(color)
                                     .into_element()
                             })),
-                            (150, 150, 150),
-                            (120, 120, 120),
                         )
                         .into_element(),
                         Button::icon(
                             EventHandler::new(move |_| {
                                 next_player.next();
                             }),
-                            Some(Box::new(|| -> Element {
+                            Some(Box::new(|color| {
                                 SvgViewer::new(("arrow-right-to-line", arrow_right_to_line()))
-                                    .color((200, 200, 200))
+                                    .color(color)
                                     .into_element()
                             })),
-                            (150, 150, 150),
-                            (120, 120, 120),
                         )
                         .into_element(),
                     ])

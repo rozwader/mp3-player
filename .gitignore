@@ -1,2 +1,4 @@
 /target
 .cursor/
+assets/music/*
+!assets/music/.gitkeep

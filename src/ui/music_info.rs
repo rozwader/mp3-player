@@ -8,12 +8,13 @@ use freya::{
     },
 };
 
-use crate::{audio::AudioPlayer, ui::components::{music_timer::MusicTimer, music_title::MusicTitle, slider::Slider}};
-
-const PROGRESS_FILL_COLOR: (u8, u8, u8) = (58, 64, 100);
-const PROGRESS_TRACK_COLOR: (u8, u8, u8) = (28, 32, 54);
-const PROGRESS_THUMB_COLOR: (u8, u8, u8) = (224, 176, 66);
-const PROGRESS_THUMB_STRIPE_COLOR: (u8, u8, u8) = (120, 90, 30);
+use crate::{
+    audio::AudioPlayer,
+    ui::{
+        components::{music_timer::MusicTimer, music_title::MusicTitle, slider::Slider},
+        theme::use_theme,
+    },
+};
 
 #[derive(PartialEq)]
 pub struct MusicInfo {
@@ -29,6 +30,7 @@ impl MusicInfo {
 impl Component for MusicInfo {
     fn render(&self) -> impl IntoElement {
         let player = use_consume::<Rc<AudioPlayer>>();
+        let theme = use_theme()();
 
         let mut title = use_state({
             let player = player.clone();
@@ -109,6 +111,8 @@ impl Component for MusicInfo {
                             .child(MusicTitle::new((&*title.read().clone().to_string()).to_string(), length_text))
                             .child(
                                 Slider::new(volume, Size::Fill)
+                                    .fill_color(theme.volume_bg)
+                                    .track_color(theme.volume_hov_bg)
                                     .on_change(move |new_volume| {
                                         volume_player.set_volume(new_volume);
                                     })
@@ -118,10 +122,8 @@ impl Component for MusicInfo {
             .child(self.controls.clone())
             .child(
                 Slider::new(music_progress, Size::Fill)
-                    .fill_color(PROGRESS_FILL_COLOR)
-                    .track_color(PROGRESS_TRACK_COLOR)
-                    .thumb_color(PROGRESS_THUMB_COLOR)
-                    .thumb_stripe_color(PROGRESS_THUMB_STRIPE_COLOR)
+                    .fill_color(theme.music_dur_bg)
+                    .track_color(theme.music_dur_hov_bg)
                     .on_drag_start(move |_| {
                         was_playing_before_seek.set(seek_start_player.is_playing());
                         is_seeking.set(true);
